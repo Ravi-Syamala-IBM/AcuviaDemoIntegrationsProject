@@ -1,0 +1,9 @@
+version: "1.0"
+info:
+  model: int-scaffold
+packages:
+- name: AcuviaDemoIntegrationsProject
+  gitServerName: rsyamala_ibm
+  gitUrl: https://github.com/Ravi-Syamala-IBM
+  gitUsername: Ravi-Syamala-IBM
+  gitBranch: main

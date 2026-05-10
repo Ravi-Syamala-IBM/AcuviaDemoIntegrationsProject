@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="enabled">yes</value>
+  <value name="lazy_load">yes</value>
+  <value name="system_package">no</value>
+  <value name="version">1.0</value>
+  <value name="name">AcuviaDemoIntegrationsProject</value>
+  <null name="startup_services"/>
+  <null name="shutdown_services"/>
+  <null name="replication_services"/>
+  <null name="requires"/>
+  <null name="lazy_load_node_types"/>
+  <null name="listACL"/>
+  <value name="webappLoad">yes</value>
+  <value name="reloadWithDependentPackage">yes</value>
+  <null name="build"/>
+  <null name="description"/>
+  <value name="created_date">10-05-2026 21:42:02 GMT</value>
+  <null name="extendedProperties"/>
+  <null name="target_server_version"/>
+  <value name="isProjectPackage">true</value>
+</Values>
