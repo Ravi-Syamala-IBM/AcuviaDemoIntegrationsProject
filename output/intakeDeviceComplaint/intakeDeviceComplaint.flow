@@ -1,0 +1,995 @@
+service intakeDeviceComplaint (
+    input {
+        String requestId [required];
+        String hospitalId;
+        String reportedBy;
+        String deviceIdentifier [required];
+        String serialNumber [required];
+        String lotNumber;
+        String severity [required];
+        String description;
+    }
+    output {
+        String status;
+        String requestId;
+        String crmCaseId;
+        String qualityReviewDecision;
+        String qmsQualityEventId;
+        String notificationId;
+        String auditId;
+        String finalDecision;
+        String errorMessage;
+    }
+) {
+    TRY {
+        MAP {
+            mapSource {
+                String requestId;
+                String hospitalId;
+                String reportedBy;
+                String deviceIdentifier;
+                String serialNumber;
+                String lotNumber;
+                String severity;
+                String description;
+            }
+            mapTarget {
+                String requestId;
+                String hospitalId;
+                String reportedBy;
+                String deviceIdentifier;
+                String serialNumber;
+                String lotNumber;
+                String severity;
+                String description;
+                String deviceRegistryUrl;
+                String complaintHistoryUrl;
+                String crmCaseUrl;
+                String qmsQualityEventUrl;
+                String notificationUrl;
+                String auditEventUrl;
+            }
+            copy requestId -> requestId;
+            copy hospitalId -> hospitalId;
+            copy reportedBy -> reportedBy;
+            copy deviceIdentifier -> deviceIdentifier;
+            copy serialNumber -> serialNumber;
+            copy lotNumber -> lotNumber;
+            copy severity -> severity;
+            copy description -> description;
+            set deviceRegistryUrl = "https://acuvia-integration-services.onrender.com/device-registry/udi/";
+            set complaintHistoryUrl = "https://acuvia-integration-services.onrender.com/complaints/history";
+            set crmCaseUrl = "https://acuvia-integration-services.onrender.com/crm/cases";
+            set qmsQualityEventUrl = "https://acuvia-integration-services.onrender.com/qms/quality-events";
+            set notificationUrl = "https://acuvia-integration-services.onrender.com/notifications/quality-review";
+            set auditEventUrl = "https://acuvia-integration-services.onrender.com/audit/events";
+        };
+        MAP {
+            mapSource {
+                String deviceRegistryUrl;
+                String deviceIdentifier;
+            }
+            mapTarget {
+                String deviceRegistryUrl;
+                String deviceIdentifier;
+                String deviceLookupUrl;
+            }
+            set (variable) deviceLookupUrl = "%deviceRegistryUrl%%deviceIdentifier%";
+        };
+        INVOKE pub.client:http {
+            input {
+                mapTarget[httpInput] {
+                    String url;
+                    String method;
+                    String loadAs;
+                    record data;
+                    record auth;
+                    record headers;
+                    String timeout;
+                    String connectTimeout;
+                    String maxKeepAliveConnections;
+                    String keepAliveTimeout;
+                    String newSession;
+                    String trustStore;
+                    String keyStoreAlias;
+                    String keyAlias;
+                    String hostNameVerification;
+                    String cipherSuites;
+                    String checkCRL;
+                    String proxyAlias;
+                    String followRedirect;
+                    String compressionEnabled;
+                }
+                copy deviceLookupUrl -> url;
+                set method = "get";
+                set loadAs = "bytes";
+                set timeout = "30000";
+            }
+            output {
+                mapSource {
+                    String encodedURL;
+                    record header;
+                    record body {
+                        Object bytes;
+                        Object stream;
+                    };
+                }
+                mapTarget {
+                    String encodedURL;
+                    record header;
+                    record body;
+                    Object deviceResponseBytes;
+                }
+                copy body/bytes -> deviceResponseBytes;
+            }
+        };
+        INVOKE pub.string:bytesToString {
+            input {
+                mapSource {
+                    Object deviceResponseBytes;
+                }
+                mapTarget[bytesToStringInput] {
+                    Object bytes;
+                    String encoding;
+                }
+                copy deviceResponseBytes -> bytes;
+                set encoding = "UTF-8";
+            }
+            output {
+                mapSource {
+                    String string;
+                }
+                mapTarget {
+                    String string;
+                    String deviceResponseString;
+                }
+                copy string -> deviceResponseString;
+            }
+        };
+        INVOKE pub.json:jsonStringToDocument {
+            input {
+                mapSource {
+                    String deviceResponseString;
+                }
+                mapTarget[jsonStringToDocumentInput] {
+                    String jsonString;
+                    String jsonDocumentTypeName;
+                    String strict;
+                    String decodeRealAsDouble;
+                    String decodeIntegerAsLong;
+                    String decodeRealAsString;
+                    String decodeNullRootAsEmpty;
+                    String unescapeSpecialChars;
+                }
+                copy deviceResponseString -> jsonString;
+            }
+            output {
+                mapSource {
+                    record document;
+                }
+                mapTarget {
+                    record document;
+                    record deviceDetails;
+                }
+                copy document -> deviceDetails;
+            }
+        };
+        MAP {
+            mapSource {
+                record deviceDetails {
+                    String deviceIdentifier;
+                    String productFamily;
+                    String model;
+                    String manufacturer;
+                    String status;
+                };
+            }
+            mapTarget {
+                record deviceDetails;
+                String productFamily;
+                String model;
+            }
+            copy deviceDetails/productFamily -> productFamily;
+            copy deviceDetails/model -> model;
+        };
+        MAP {
+            mapSource {
+                String complaintHistoryUrl;
+                String serialNumber;
+            }
+            mapTarget {
+                String complaintHistoryUrl;
+                String serialNumber;
+                String complaintHistoryQueryUrl;
+            }
+            set (variable) complaintHistoryQueryUrl = "%complaintHistoryUrl%?serialNumber=%serialNumber%";
+        };
+        INVOKE pub.client:http {
+            input {
+                mapTarget[httpInput] {
+                    String url;
+                    String method;
+                    String loadAs;
+                    record data;
+                    record auth;
+                    record headers;
+                    String timeout;
+                    String connectTimeout;
+                    String maxKeepAliveConnections;
+                    String keepAliveTimeout;
+                    String newSession;
+                    String trustStore;
+                    String keyStoreAlias;
+                    String keyAlias;
+                    String hostNameVerification;
+                    String cipherSuites;
+                    String checkCRL;
+                    String proxyAlias;
+                    String followRedirect;
+                    String compressionEnabled;
+                }
+                copy complaintHistoryQueryUrl -> url;
+                set method = "get";
+                set loadAs = "bytes";
+                set timeout = "30000";
+            }
+            output {
+                mapSource {
+                    String encodedURL;
+                    record header;
+                    record body {
+                        Object bytes;
+                        Object stream;
+                    };
+                }
+                mapTarget {
+                    String encodedURL;
+                    record header;
+                    record body;
+                    Object historyResponseBytes;
+                }
+                copy body/bytes -> historyResponseBytes;
+            }
+        };
+        INVOKE pub.string:bytesToString {
+            input {
+                mapSource {
+                    Object historyResponseBytes;
+                }
+                mapTarget[bytesToStringInput] {
+                    Object bytes;
+                    String encoding;
+                }
+                copy historyResponseBytes -> bytes;
+                set encoding = "UTF-8";
+            }
+            output {
+                mapSource {
+                    String string;
+                }
+                mapTarget {
+                    String string;
+                    String historyResponseString;
+                }
+                copy string -> historyResponseString;
+            }
+        };
+        INVOKE pub.json:jsonStringToDocument {
+            input {
+                mapSource {
+                    String historyResponseString;
+                }
+                mapTarget[jsonStringToDocumentInput] {
+                    String jsonString;
+                    String jsonDocumentTypeName;
+                    String strict;
+                    String decodeRealAsDouble;
+                    String decodeIntegerAsLong;
+                    String decodeRealAsString;
+                    String decodeNullRootAsEmpty;
+                    String unescapeSpecialChars;
+                }
+                copy historyResponseString -> jsonString;
+            }
+            output {
+                mapSource {
+                    record document;
+                }
+                mapTarget {
+                    record document;
+                    record complaintHistory;
+                }
+                copy document -> complaintHistory;
+            }
+        };
+        MAP {
+            mapSource {
+                record complaintHistory {
+                    Integer complaintCountLast30Days;
+                    Integer complaintCountLast90Days;
+                    Integer totalComplaints;
+                };
+            }
+            mapTarget {
+                record complaintHistory;
+                Integer complaintCountLast30Days;
+            }
+            copy complaintHistory/complaintCountLast30Days -> complaintCountLast30Days;
+        };
+        MAP {
+            mapSource {
+                String hospitalId;
+                String reportedBy;
+                String deviceIdentifier;
+                String serialNumber;
+                String lotNumber;
+                String severity;
+                String description;
+                String productFamily;
+                String model;
+            }
+            mapTarget {
+                String hospitalId;
+                String reportedBy;
+                String deviceIdentifier;
+                String serialNumber;
+                String lotNumber;
+                String severity;
+                String description;
+                String productFamily;
+                String model;
+                String crmCasePayload;
+            }
+            set (variable) crmCasePayload = "{\"hospitalId\":\"%hospitalId%\",\"reportedBy\":\"%reportedBy%\",\"deviceIdentifier\":\"%deviceIdentifier%\",\"serialNumber\":\"%serialNumber%\",\"lotNumber\":\"%lotNumber%\",\"severity\":\"%severity%\",\"description\":\"%description%\",\"productFamily\":\"%productFamily%\",\"model\":\"%model%\",\"source\":\"AcuVia Integration Services\"}";
+        };
+        INVOKE pub.client:http {
+            input {
+                mapTarget[httpInput] {
+                    String url;
+                    String method;
+                    String loadAs;
+                    record data;
+                    record auth;
+                    record headers {
+                        String Content-Type;
+                    };
+                    String timeout;
+                    String connectTimeout;
+                    String maxKeepAliveConnections;
+                    String keepAliveTimeout;
+                    String newSession;
+                    String trustStore;
+                    String keyStoreAlias;
+                    String keyAlias;
+                    String hostNameVerification;
+                    String cipherSuites;
+                    String checkCRL;
+                    String proxyAlias;
+                    String followRedirect;
+                    String compressionEnabled;
+                }
+                copy crmCaseUrl -> url;
+                set method = "post";
+                set loadAs = "bytes";
+                set timeout = "30000";
+                set headers/Content-Type = "application/json";
+                copy crmCasePayload -> data;
+            }
+            output {
+                mapSource {
+                    String encodedURL;
+                    record header;
+                    record body {
+                        Object bytes;
+                        Object stream;
+                    };
+                }
+                mapTarget {
+                    String encodedURL;
+                    record header;
+                    record body;
+                    Object crmResponseBytes;
+                }
+                copy body/bytes -> crmResponseBytes;
+            }
+        };
+        INVOKE pub.string:bytesToString {
+            input {
+                mapSource {
+                    Object crmResponseBytes;
+                }
+                mapTarget[bytesToStringInput] {
+                    Object bytes;
+                    String encoding;
+                }
+                copy crmResponseBytes -> bytes;
+                set encoding = "UTF-8";
+            }
+            output {
+                mapSource {
+                    String string;
+                }
+                mapTarget {
+                    String string;
+                    String crmResponseString;
+                }
+                copy string -> crmResponseString;
+            }
+        };
+        INVOKE pub.json:jsonStringToDocument {
+            input {
+                mapSource {
+                    String crmResponseString;
+                }
+                mapTarget[jsonStringToDocumentInput] {
+                    String jsonString;
+                    String jsonDocumentTypeName;
+                    String strict;
+                    String decodeRealAsDouble;
+                    String decodeIntegerAsLong;
+                    String decodeRealAsString;
+                    String decodeNullRootAsEmpty;
+                    String unescapeSpecialChars;
+                }
+                copy crmResponseString -> jsonString;
+            }
+            output {
+                mapSource {
+                    record document;
+                }
+                mapTarget {
+                    record document;
+                    record crmCaseResponse;
+                }
+                copy document -> crmCaseResponse;
+            }
+        };
+        MAP {
+            mapSource {
+                record crmCaseResponse {
+                    String caseId;
+                    String status;
+                };
+            }
+            mapTarget {
+                record crmCaseResponse;
+                String crmCaseId;
+            }
+            copy crmCaseResponse/caseId -> crmCaseId;
+        };
+        MAP {
+            mapSource {
+                String severity;
+                Integer complaintCountLast30Days;
+            }
+            mapTarget {
+                String severity;
+                Integer complaintCountLast30Days;
+                String qualityReviewRequired;
+            }
+            set qualityReviewRequired = "false";
+        };
+        IF (%severity% == "high") {
+            MAP {
+                mapTarget {
+                    String qualityReviewRequired;
+                }
+                set qualityReviewRequired = "true";
+            };
+        };
+        IF (%complaintCountLast30Days% > 1) {
+            MAP {
+                mapTarget {
+                    String qualityReviewRequired;
+                }
+                set qualityReviewRequired = "true";
+            };
+        };
+        MAP {
+            mapSource {
+                String qualityReviewRequired;
+            }
+            mapTarget {
+                String qualityReviewRequired;
+                String qualityReviewDecision;
+            }
+            copy qualityReviewRequired -> qualityReviewDecision;
+        };
+        IF (%qualityReviewRequired% == "true") {
+            MAP {
+                mapSource {
+                    String deviceIdentifier;
+                    String serialNumber;
+                    String lotNumber;
+                    String severity;
+                    String crmCaseId;
+                    String description;
+                }
+                mapTarget {
+                    String deviceIdentifier;
+                    String serialNumber;
+                    String lotNumber;
+                    String severity;
+                    String crmCaseId;
+                    String description;
+                    String qmsPayload;
+                }
+                set (variable) qmsPayload = "{\"source\":\"AcuVia Integration Services\",\"severity\":\"%severity%\",\"eventType\":\"complaint\",\"deviceIdentifier\":\"%deviceIdentifier%\",\"serialNumber\":\"%serialNumber%\",\"lotNumber\":\"%lotNumber%\",\"crmCaseId\":\"%crmCaseId%\",\"reason\":\"%description%\"}";
+            };
+            INVOKE pub.client:http {
+                input {
+                    mapTarget[httpInput] {
+                        String url;
+                        String method;
+                        String loadAs;
+                        record data;
+                        record auth;
+                        record headers {
+                            String Content-Type;
+                        };
+                        String timeout;
+                        String connectTimeout;
+                        String maxKeepAliveConnections;
+                        String keepAliveTimeout;
+                        String newSession;
+                        String trustStore;
+                        String keyStoreAlias;
+                        String keyAlias;
+                        String hostNameVerification;
+                        String cipherSuites;
+                        String checkCRL;
+                        String proxyAlias;
+                        String followRedirect;
+                        String compressionEnabled;
+                    }
+                    copy qmsQualityEventUrl -> url;
+                    set method = "post";
+                    set loadAs = "bytes";
+                    set timeout = "30000";
+                    set headers/Content-Type = "application/json";
+                    copy qmsPayload -> data;
+                }
+                output {
+                    mapSource {
+                        String encodedURL;
+                        record header;
+                        record body {
+                            Object bytes;
+                            Object stream;
+                        };
+                    }
+                    mapTarget {
+                        String encodedURL;
+                        record header;
+                        record body;
+                        Object qmsResponseBytes;
+                    }
+                    copy body/bytes -> qmsResponseBytes;
+                }
+            };
+            INVOKE pub.string:bytesToString {
+                input {
+                    mapSource {
+                        Object qmsResponseBytes;
+                    }
+                    mapTarget[bytesToStringInput] {
+                        Object bytes;
+                        String encoding;
+                    }
+                    copy qmsResponseBytes -> bytes;
+                    set encoding = "UTF-8";
+                }
+                output {
+                    mapSource {
+                        String string;
+                    }
+                    mapTarget {
+                        String string;
+                        String qmsResponseString;
+                    }
+                    copy string -> qmsResponseString;
+                }
+            };
+            INVOKE pub.json:jsonStringToDocument {
+                input {
+                    mapSource {
+                        String qmsResponseString;
+                    }
+                    mapTarget[jsonStringToDocumentInput] {
+                        String jsonString;
+                        String jsonDocumentTypeName;
+                        String strict;
+                        String decodeRealAsDouble;
+                        String decodeIntegerAsLong;
+                        String decodeRealAsString;
+                        String decodeNullRootAsEmpty;
+                        String unescapeSpecialChars;
+                    }
+                    copy qmsResponseString -> jsonString;
+                }
+                output {
+                    mapSource {
+                        record document;
+                    }
+                    mapTarget {
+                        record document;
+                        record qmsQualityEventResponse;
+                    }
+                    copy document -> qmsQualityEventResponse;
+                }
+            };
+            MAP {
+                mapSource {
+                    record qmsQualityEventResponse {
+                        String qualityEventId;
+                        String status;
+                    };
+                }
+                mapTarget {
+                    record qmsQualityEventResponse;
+                    String qmsQualityEventId;
+                }
+                copy qmsQualityEventResponse/qualityEventId -> qmsQualityEventId;
+            };
+            MAP {
+                mapSource {
+                    String qmsQualityEventId;
+                    String crmCaseId;
+                    String deviceIdentifier;
+                    String serialNumber;
+                }
+                mapTarget {
+                    String qmsQualityEventId;
+                    String crmCaseId;
+                    String deviceIdentifier;
+                    String serialNumber;
+                    String notificationPayload;
+                }
+                set (variable) notificationPayload = "{\"channel\":\"email\",\"priority\":\"high\",\"subject\":\"Quality Review Required\",\"message\":\"Quality review required for device %deviceIdentifier% serial %serialNumber%. CRM Case: %crmCaseId%, QMS Event: %qmsQualityEventId%\",\"recipients\":[\"quality-team@acuvia.com\"]}";
+            };
+            INVOKE pub.client:http {
+                input {
+                    mapTarget[httpInput] {
+                        String url;
+                        String method;
+                        String loadAs;
+                        record data;
+                        record auth;
+                        record headers {
+                            String Content-Type;
+                        };
+                        String timeout;
+                        String connectTimeout;
+                        String maxKeepAliveConnections;
+                        String keepAliveTimeout;
+                        String newSession;
+                        String trustStore;
+                        String keyStoreAlias;
+                        String keyAlias;
+                        String hostNameVerification;
+                        String cipherSuites;
+                        String checkCRL;
+                        String proxyAlias;
+                        String followRedirect;
+                        String compressionEnabled;
+                    }
+                    copy notificationUrl -> url;
+                    set method = "post";
+                    set loadAs = "bytes";
+                    set timeout = "30000";
+                    set headers/Content-Type = "application/json";
+                    copy notificationPayload -> data;
+                }
+                output {
+                    mapSource {
+                        String encodedURL;
+                        record header;
+                        record body {
+                            Object bytes;
+                            Object stream;
+                        };
+                    }
+                    mapTarget {
+                        String encodedURL;
+                        record header;
+                        record body;
+                        Object notificationResponseBytes;
+                    }
+                    copy body/bytes -> notificationResponseBytes;
+                }
+            };
+            INVOKE pub.string:bytesToString {
+                input {
+                    mapSource {
+                        Object notificationResponseBytes;
+                    }
+                    mapTarget[bytesToStringInput] {
+                        Object bytes;
+                        String encoding;
+                    }
+                    copy notificationResponseBytes -> bytes;
+                    set encoding = "UTF-8";
+                }
+                output {
+                    mapSource {
+                        String string;
+                    }
+                    mapTarget {
+                        String string;
+                        String notificationResponseString;
+                    }
+                    copy string -> notificationResponseString;
+                }
+            };
+            INVOKE pub.json:jsonStringToDocument {
+                input {
+                    mapSource {
+                        String notificationResponseString;
+                    }
+                    mapTarget[jsonStringToDocumentInput] {
+                        String jsonString;
+                        String jsonDocumentTypeName;
+                        String strict;
+                        String decodeRealAsDouble;
+                        String decodeIntegerAsLong;
+                        String decodeRealAsString;
+                        String decodeNullRootAsEmpty;
+                        String unescapeSpecialChars;
+                    }
+                    copy notificationResponseString -> jsonString;
+                }
+                output {
+                    mapSource {
+                        record document;
+                    }
+                    mapTarget {
+                        record document;
+                        record notificationResponse;
+                    }
+                    copy document -> notificationResponse;
+                }
+            };
+            MAP {
+                mapSource {
+                    record notificationResponse {
+                        String notificationId;
+                        String status;
+                    };
+                }
+                mapTarget {
+                    record notificationResponse;
+                    String notificationId;
+                }
+                copy notificationResponse/notificationId -> notificationId;
+            };
+        };
+        MAP {
+            mapSource {
+                String requestId;
+                String deviceIdentifier;
+                String lotNumber;
+                String serialNumber;
+                String qualityReviewDecision;
+                String crmCaseId;
+                String qmsQualityEventId;
+                String notificationId;
+            }
+            mapTarget {
+                String requestId;
+                String deviceIdentifier;
+                String lotNumber;
+                String serialNumber;
+                String qualityReviewDecision;
+                String crmCaseId;
+                String qmsQualityEventId;
+                String notificationId;
+                String auditPayload;
+            }
+            set (variable) auditPayload = "{\"requestId\":\"%requestId%\",\"serviceName\":\"intakeDeviceComplaint\",\"decision\":\"Quality review decision: %qualityReviewDecision%\",\"deviceIdentifier\":\"%deviceIdentifier%\",\"lotNumber\":\"%lotNumber%\",\"serialNumber\":\"%serialNumber%\",\"payload\":{\"crmCaseId\":\"%crmCaseId%\",\"qmsQualityEventId\":\"%qmsQualityEventId%\",\"notificationId\":\"%notificationId%\"}}";
+        };
+        INVOKE pub.client:http {
+            input {
+                mapTarget[httpInput] {
+                    String url;
+                    String method;
+                    String loadAs;
+                    record data;
+                    record auth;
+                    record headers {
+                        String Content-Type;
+                    };
+                    String timeout;
+                    String connectTimeout;
+                    String maxKeepAliveConnections;
+                    String keepAliveTimeout;
+                    String newSession;
+                    String trustStore;
+                    String keyStoreAlias;
+                    String keyAlias;
+                    String hostNameVerification;
+                    String cipherSuites;
+                    String checkCRL;
+                    String proxyAlias;
+                    String followRedirect;
+                    String compressionEnabled;
+                }
+                copy auditEventUrl -> url;
+                set method = "post";
+                set loadAs = "bytes";
+                set timeout = "30000";
+                set headers/Content-Type = "application/json";
+                copy auditPayload -> data;
+            }
+            output {
+                mapSource {
+                    String encodedURL;
+                    record header;
+                    record body {
+                        Object bytes;
+                        Object stream;
+                    };
+                }
+                mapTarget {
+                    String encodedURL;
+                    record header;
+                    record body;
+                    Object auditResponseBytes;
+                }
+                copy body/bytes -> auditResponseBytes;
+            }
+        };
+        INVOKE pub.string:bytesToString {
+            input {
+                mapSource {
+                    Object auditResponseBytes;
+                }
+                mapTarget[bytesToStringInput] {
+                    Object bytes;
+                    String encoding;
+                }
+                copy auditResponseBytes -> bytes;
+                set encoding = "UTF-8";
+            }
+            output {
+                mapSource {
+                    String string;
+                }
+                mapTarget {
+                    String string;
+                    String auditResponseString;
+                }
+                copy string -> auditResponseString;
+            }
+        };
+        INVOKE pub.json:jsonStringToDocument {
+            input {
+                mapSource {
+                    String auditResponseString;
+                }
+                mapTarget[jsonStringToDocumentInput] {
+                    String jsonString;
+                    String jsonDocumentTypeName;
+                    String strict;
+                    String decodeRealAsDouble;
+                    String decodeIntegerAsLong;
+                    String decodeRealAsString;
+                    String decodeNullRootAsEmpty;
+                    String unescapeSpecialChars;
+                }
+                copy auditResponseString -> jsonString;
+            }
+            output {
+                mapSource {
+                    record document;
+                }
+                mapTarget {
+                    record document;
+                    record auditEventResponse;
+                }
+                copy document -> auditEventResponse;
+            }
+        };
+        MAP {
+            mapSource {
+                record auditEventResponse {
+                    String auditId;
+                    String status;
+                };
+            }
+            mapTarget {
+                record auditEventResponse;
+                String auditId;
+            }
+            copy auditEventResponse/auditId -> auditId;
+        };
+        MAP {
+            mapSource {
+                String requestId;
+                String crmCaseId;
+                String qualityReviewDecision;
+                String qmsQualityEventId;
+                String notificationId;
+                String auditId;
+            }
+            mapTarget {
+                String status;
+                String requestId;
+                String crmCaseId;
+                String qualityReviewDecision;
+                String qmsQualityEventId;
+                String notificationId;
+                String auditId;
+                String finalDecision;
+            }
+            set status = "SUCCESS";
+            copy requestId -> requestId;
+            copy crmCaseId -> crmCaseId;
+            copy qualityReviewDecision -> qualityReviewDecision;
+            copy qmsQualityEventId -> qmsQualityEventId;
+            copy notificationId -> notificationId;
+            copy auditId -> auditId;
+            set finalDecision = "Complaint intake completed successfully";
+            drop deviceRegistryUrl;
+            drop complaintHistoryUrl;
+            drop crmCaseUrl;
+            drop qmsQualityEventUrl;
+            drop notificationUrl;
+            drop auditEventUrl;
+            drop deviceLookupUrl;
+            drop deviceResponseBytes;
+            drop deviceResponseString;
+            drop deviceDetails;
+            drop productFamily;
+            drop model;
+            drop complaintHistoryQueryUrl;
+            drop historyResponseBytes;
+            drop historyResponseString;
+            drop complaintHistory;
+            drop complaintCountLast30Days;
+            drop crmCasePayload;
+            drop crmResponseBytes;
+            drop crmResponseString;
+            drop crmCaseResponse;
+            drop qualityReviewRequired;
+            drop qmsPayload;
+            drop qmsResponseBytes;
+            drop qmsResponseString;
+            drop qmsQualityEventResponse;
+            drop notificationPayload;
+            drop notificationResponseBytes;
+            drop notificationResponseString;
+            drop notificationResponse;
+            drop auditPayload;
+            drop auditResponseBytes;
+            drop auditResponseString;
+            drop auditEventResponse;
+        };
+    }CATCH {
+        INVOKE pub.flow:getLastError {
+            input {
+            }
+            output {
+            }
+        };
+        MAP {
+            mapSource {
+                String requestId;
+                record lastError {
+                    String error;
+                    String errorMessage;
+                };
+            }
+            mapTarget {
+                String status;
+                String requestId;
+                String errorMessage;
+                String finalDecision;
+            }
+            set status = "FAILURE";
+            copy requestId -> requestId;
+            copy lastError/error -> errorMessage;
+            set finalDecision = "Complaint intake failed";
+            drop lastError;
+        };
+    };
+}
